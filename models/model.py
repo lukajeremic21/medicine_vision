@@ -60,10 +60,10 @@ def blood_cells_prediction():
 
     predicted_class_name = class_labels[predicted_class_index]
 
-    # Print or return the predicted class name
-    print("Predicted class:", predicted_class_name)
-    # result = f'{predicted_class_name} sa sigurnošću od {confidence:.2f}%. '
-    result = f'{predicted_class_name}. '
+    # Get the probability or confidence percentage  
+    confidence = predictions[0][predicted_class_index] * 100
+
+    result = f'{predicted_class_name}. sa sigurnošću od {confidence:.2f}%.'
 
     return result
 
