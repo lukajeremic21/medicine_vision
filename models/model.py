@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, Response
 from flask_cors import CORS
 import tensorflow as tf
 import tensorflow_hub as hub
@@ -7,6 +7,9 @@ from keras import layers
 from keras.models import Sequential
 from keras.preprocessing import image
 import numpy as np
+from PIL import Image
+from io import BytesIO
+from ultralytics import YOLO
 
 app = Flask(__name__)
 CORS(app)
@@ -28,6 +31,40 @@ class_names = [
 blood_cells_model = tf.keras.models.load_model('./blood_cells/model.h5')
 class_labels = ['Benign', '[Malignant] Pre-B', '[Malignant] Pro-B', '[Malignant] early Pre-B']  # Add your class labels here
 
+
+liver_model = YOLO('./liver/best.pt')
+
+@app.route('/predict_liver', methods=['POST'])
+def predict():
+    # Get the image from the POST request
+    file = request.files['image']
+    img = Image.open(file.stream)
+
+    # Save the image locally
+    saved_image_path = 'saved_image.jpg'
+    img.save(saved_image_path)
+
+
+    # Run the YOLOv8 model on the input image
+    results = liver_model(source=saved_image_path, project="./liver/luka", show=True, conf=0.4, save=True)
+
+    save_dir = results[0].save_dir
+    # names = results.names
+
+    # Print the boxes and names
+    path = save_dir
+    new_path = path.replace('\\', '/')
+    new_path = './' + new_path + '/'
+    print(save_dir)
+
+    # print(names)    # Load the saved image for displaying
+    saved_img = Image.open(new_path+'saved_image.jpg')
+    img_io = BytesIO()
+    saved_img.save(img_io, format='JPEG')  # Specify the image format explicitly
+    img_io.seek(0)
+
+    # Return the image in the response
+    return Response(img_io.getvalue(), mimetype='image/jpeg')
 
 @app.route('/blood_cells', methods=['GET','POST'])
 def blood_cells_prediction():
